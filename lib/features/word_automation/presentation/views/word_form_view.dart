@@ -1,7 +1,7 @@
 import 'package:automation_app/features/word_automation/presentation/blocs/document_bloc.dart'
-    show DocumentBloc, OpenDocumentEvent, EditDocumentEvent, DocumentSelectedEvent;
+    show DocumentBloc, DocumentSelectedEvent, DocumentState, DocumentLoaded, SelectDocumentEvent;
+import 'package:automation_app/features/word_automation/presentation/blocs/edited_document_bloc.dart';
 import 'package:automation_app/features/word_automation/presentation/widgets/default_text_field.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -19,18 +19,19 @@ class _WordFormViewState extends State<WordFormView> {
     'lastName': FormControl<String>(),
     'age': FormControl<int>(
       validators: [
-        Validators.number(
-          allowNegatives: false,
-          allowedDecimals: 0,
-        ),
+        Validators.number(allowNegatives: false, allowedDecimals: 0),
       ],
     ),
-    'email': FormControl<String>(validators: [Validators.email,Validators.required]),
+    'email': FormControl<String>(
+      validators: [Validators.email, Validators.required],
+    ),
   });
 
   @override
   Widget build(BuildContext context) {
     final documentBloc = context.read<DocumentBloc>();
+    final editedDocumentBloc = context.read<EditedDocumentBloc>();
+
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 450),
@@ -41,23 +42,11 @@ class _WordFormViewState extends State<WordFormView> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
-              spacing: 16, // Replaces individual Padding widgets
+              spacing: 16,
               children: [
                 FilledButton.icon(
-                  onPressed: () async {
-                    FilePickerResult? result = await FilePicker.platform
-                        .pickFiles(
-                          type: FileType.custom,
-                          allowedExtensions: ['docx'],
-                        );
-
-                    if (result != null) {
-                      debugPrint('Selected file: ${result.files.first.path}');
-
-                      documentBloc.add(
-                        DocumentSelectedEvent(result.files.first.path!),
-                      );
-                    }
+                  onPressed: () {
+                    documentBloc.add(SelectDocumentEvent());
                   },
                   icon: const Icon(Icons.file_open),
                   label: const Text('Word-Dokument auswählen'),
@@ -107,26 +96,54 @@ class _WordFormViewState extends State<WordFormView> {
                   labelText: 'E-Mail',
                   validationMessages: {
                     ValidationMessage.email: (error) => 'Ungültige E-Mail',
-                    ValidationMessage.required : (error) => 'E-Mail ist ein Pflichtfeld',
+                    ValidationMessage.required: (error) =>
+                        'E-Mail ist ein Pflichtfeld',
                   },
                 ),
                 ReactiveFormConsumer(
-                  builder: (context,form,child) {
-                    return FilledButton.icon(
-                      onPressed: form.valid ? () => documentBloc.add(
-                        EditDocumentEvent(
-                          data: {
-                            'firstName': formGroup.control('firstName').value ?? '',
-                            'lastName': formGroup.control('lastName').value ?? '',
-                            'age': formGroup.control('age').value?.toString() ?? '',
-                            'email': formGroup.control('email').value ?? '',
-                          },
-                        ),
-                      ) : null,
-                      label: const Text('Word-Dokument bearbeiten'),
-                      icon: const Icon(Icons.edit),
+                  builder: (context, form, child) {
+                    return BlocProvider.value(
+                      value: documentBloc,
+                      child: BlocBuilder<DocumentBloc, DocumentState>(
+                        builder: (context, state) {
+                          return FilledButton.icon(
+                            onPressed: form.valid
+                                ? () => editedDocumentBloc.add(
+                                    EditDocumentEvent(
+                                      data: {
+                                        'firstName':
+                                            formGroup
+                                                .control('firstName')
+                                                .value ??
+                                            '',
+                                        'lastName':
+                                            formGroup
+                                                .control('lastName')
+                                                .value ??
+                                            '',
+                                        'age':
+                                            formGroup
+                                                .control('age')
+                                                .value
+                                                ?.toString() ??
+                                            '',
+                                        'email':
+                                            formGroup.control('email').value ??
+                                            '',
+                                      },
+                                      path: state is DocumentLoaded
+                                          ? state.path
+                                          : '',
+                                    ),
+                                  )
+                                : null,
+                            label: const Text('Word-Dokument bearbeiten'),
+                            icon: const Icon(Icons.edit),
+                          );
+                        },
+                      ),
                     );
-                  }
+                  },
                 ),
               ],
             ),

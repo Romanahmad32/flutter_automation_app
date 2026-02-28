@@ -16,9 +16,8 @@ final class DocumentLoading extends DocumentState {
 
 final class DocumentLoaded extends DocumentState {
   final String path;
-  final String? editedPath;
 
-  const DocumentLoaded(this.path, this.editedPath);
+  const DocumentLoaded({required this.path});
 
   @override
   List<Object> get props => [path];

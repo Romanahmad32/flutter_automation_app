@@ -42,21 +42,6 @@ class WordAutomationPage extends StatelessWidget implements AutoRouteWrapper {
           centerTitle: true,
           title: const Text('Word Vorlagen ausfüllen'),
           backgroundColor: Theme.of(context).buttonTheme.colorScheme?.onPrimary,
-          leading: BlocBuilder<ThemeBloc, ThemeState>(
-            builder: (context, themeState) {
-              final isLight = themeState is LightTheme;
-
-              return IconButton(
-                onPressed: () {
-                  final newMode = isLight ? ThemeMode.dark : ThemeMode.light;
-                  context.read<ThemeBloc>().add(
-                    ChangeThemeEvent(themeMode: newMode),
-                  );
-                },
-                icon: Icon(isLight ? Icons.dark_mode : Icons.light_mode),
-              );
-            },
-          ),
         ),
         body: const Row(
           children: [

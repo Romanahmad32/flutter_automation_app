@@ -5,17 +5,12 @@ sealed class EditedDocumentEvent extends Equatable {
   const EditedDocumentEvent();
 }
 
-class EditedDocumentReceived extends EditedDocumentEvent {
+final class EditDocumentEvent extends EditedDocumentEvent {
   final String path;
+  final Map<String, String> data;
 
-  const EditedDocumentReceived(this.path);
-
-  @override
-  List<Object?> get props => [path];
-}
-class ResetEditedDocumentView extends EditedDocumentEvent {
-  const ResetEditedDocumentView();
+  const EditDocumentEvent({required this.data, required this.path});
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [path,data];
 }

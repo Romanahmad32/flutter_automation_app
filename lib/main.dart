@@ -1,9 +1,6 @@
 import 'package:automation_app/core/di/injection.dart';
 import 'package:automation_app/core/router/app_router.dart';
 import 'package:automation_app/core/theme/presentation/bloc/theme_bloc.dart';
-import 'package:automation_app/features/test_feature/presentation/%20blocs/login_bloc.dart';
-import 'package:automation_app/features/word_automation/presentation/blocs/document_bloc.dart';
-import 'package:automation_app/features/word_automation/presentation/blocs/edited_document_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -37,7 +34,6 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (context) => getIt<LoginBloc>()),
         BlocProvider(create: (context) => getIt<ThemeBloc>()),
       ],
       child: BlocBuilder<ThemeBloc, ThemeState>(

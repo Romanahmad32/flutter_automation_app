@@ -13,7 +13,7 @@ class AppRouter extends RootStackRouter {
       children: [
         // These are the children injected into the Expanded(child: child) above
         AutoRoute(path: 'word-automation', page: WordAutomationRoute.page),
-        AutoRoute(path: 'my', page: MyRoute.page),
+        AutoRoute(path: 'einstellungen', page: SettingsRoute.page),
       ],
     ),
   ];

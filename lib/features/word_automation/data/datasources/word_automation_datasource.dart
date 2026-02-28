@@ -29,7 +29,7 @@ class ApiWordAutomationDatasource implements WordAutomationDatasource {
 
       return responseData['outputFilePath'];
     } on DioException catch (e) {
-      throw Exception('Komisch es scheint als wäre etwas schief gegangen : $e');
+      throw Exception('Beim bearbeiten des Word-Dokuments ist ein Fehler aufgetreten');
     }
   }
 }

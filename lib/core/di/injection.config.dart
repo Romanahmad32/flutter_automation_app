@@ -15,8 +15,6 @@ import 'package:automation_app/core/network/network_module.dart' as _i194;
 import 'package:automation_app/core/router/app_router.dart' as _i842;
 import 'package:automation_app/core/theme/presentation/bloc/theme_bloc.dart'
     as _i1049;
-import 'package:automation_app/features/test_feature/presentation/%20blocs/login_bloc.dart'
-    as _i1017;
 import 'package:automation_app/features/word_automation/data/datasources/word_automation_datasource.dart'
     as _i287;
 import 'package:automation_app/features/word_automation/data/repositories/api_word_automation_repository.dart'
@@ -41,11 +39,10 @@ extension GetItInjectableX on _i174.GetIt {
   }) {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     final networkModule = _$NetworkModule();
-    gh.factory<_i1040.EditedDocumentBloc>(() => _i1040.EditedDocumentBloc());
+    gh.factory<_i115.DocumentBloc>(() => _i115.DocumentBloc());
     gh.singleton<_i361.Dio>(() => networkModule.dio);
     gh.singleton<_i842.AppRouter>(() => _i842.AppRouter());
     gh.singleton<_i1049.ThemeBloc>(() => _i1049.ThemeBloc());
-    gh.singleton<_i1017.LoginBloc>(() => _i1017.LoginBloc());
     gh.factory<_i287.WordAutomationDatasource>(
       () => _i287.ApiWordAutomationDatasource(gh<_i361.Dio>()),
     );
@@ -59,8 +56,8 @@ extension GetItInjectableX on _i174.GetIt {
         repository: gh<_i770.WordAutomationRepository>(),
       ),
     );
-    gh.factory<_i115.DocumentBloc>(
-      () => _i115.DocumentBloc(
+    gh.factory<_i1040.EditedDocumentBloc>(
+      () => _i1040.EditedDocumentBloc(
         gh<_i223.UseCase<String, _i649.FillOutTemplateParams>>(),
       ),
     );

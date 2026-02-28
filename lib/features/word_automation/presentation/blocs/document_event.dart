@@ -4,15 +4,9 @@ sealed class DocumentEvent {
   const DocumentEvent();
 }
 
-final class DocumentSelectedEvent extends DocumentEvent {
-  final String path;
+final class SelectDocumentEvent extends DocumentEvent {
 
-  const DocumentSelectedEvent(this.path);
+  const SelectDocumentEvent();
 }
 
-final class EditDocumentEvent extends DocumentEvent {
-  final Map<String, String> data;
-
-  const EditDocumentEvent({required this.data});
-}
 
