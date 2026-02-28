@@ -1,5 +1,5 @@
 import 'package:automation_app/features/word_automation/presentation/blocs/document_bloc.dart'
-    show DocumentBloc, DocumentSelectedEvent, DocumentState, DocumentLoaded, SelectDocumentEvent;
+    show DocumentBloc, DocumentState, DocumentLoaded, SelectDocumentEvent;
 import 'package:automation_app/features/word_automation/presentation/blocs/edited_document_bloc.dart';
 import 'package:automation_app/features/word_automation/presentation/widgets/default_text_field.dart';
 import 'package:flutter/material.dart';
