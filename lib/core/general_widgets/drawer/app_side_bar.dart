@@ -24,14 +24,14 @@ class AppSidebar extends StatelessWidget {
 
   static const _destinations = [
     (
-    icon: Icons.document_scanner_outlined,
-    selectedIcon: Icons.document_scanner,
-    label: 'Word Automation',
+      icon: Icons.document_scanner_outlined,
+      selectedIcon: Icons.document_scanner,
+      label: 'Word Automation',
     ),
     (
-    icon: Icons.settings_outlined,
-    selectedIcon: Icons.settings,
-    label: 'Einstellungen',
+      icon: Icons.settings_outlined,
+      selectedIcon: Icons.settings,
+      label: 'Einstellungen',
     ),
   ];
 
@@ -46,10 +46,7 @@ class AppSidebar extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         border: Border(
-          right: BorderSide(
-            color: colorScheme.outlineVariant,
-            width: 1,
-          ),
+          right: BorderSide(color: colorScheme.outlineVariant, width: 1),
         ),
       ),
       child: Column(

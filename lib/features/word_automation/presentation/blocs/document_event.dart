@@ -5,8 +5,5 @@ sealed class DocumentEvent {
 }
 
 final class SelectDocumentEvent extends DocumentEvent {
-
   const SelectDocumentEvent();
 }
-
-

@@ -11,7 +11,7 @@ class FillOutTemplate implements UseCase<String, FillOutTemplateParams> {
 
   @override
   Future<Either<Failure, String>> call(FillOutTemplateParams params) async {
-    return repository.fillOutTemplate(params.path,params.data);
+    return repository.fillOutTemplate(params.path, params.data);
   }
 }
 

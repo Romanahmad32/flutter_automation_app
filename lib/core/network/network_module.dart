@@ -4,15 +4,21 @@ import 'package:injectable/injectable.dart';
 @module
 abstract class NetworkModule {
   @singleton
-  Dio get dio => Dio(BaseOptions(
-    baseUrl: 'http://localhost:5143',
-    connectTimeout: const Duration(seconds: 3),
-    receiveTimeout: const Duration(seconds: 3),
-  ))..interceptors.add(LogInterceptor(
-    requestHeader: true,
-    requestBody: true,
-    responseHeader: true,
-    responseBody: true,
-    error: true,
-  ));
+  Dio get dio =>
+      Dio(
+          BaseOptions(
+            baseUrl: 'http://localhost:5143',
+            connectTimeout: const Duration(seconds: 3),
+            receiveTimeout: const Duration(seconds: 3),
+          ),
+        )
+        ..interceptors.add(
+          LogInterceptor(
+            requestHeader: true,
+            requestBody: true,
+            responseHeader: true,
+            responseBody: true,
+            error: true,
+          ),
+        );
 }

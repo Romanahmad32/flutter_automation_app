@@ -12,7 +12,7 @@ class ThemeBloc extends Bloc<ThemeEvent, ThemeState> {
   }
 
   void _onChangeThemeEvent(ChangeThemeEvent event, Emitter<ThemeState> emit) {
-    switch (event.themeMode){
+    switch (event.themeMode) {
       case ThemeMode.dark:
         emit(DarkTheme());
         break;

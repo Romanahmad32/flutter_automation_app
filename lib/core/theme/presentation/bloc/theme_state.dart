@@ -4,13 +4,13 @@ part of 'theme_bloc.dart';
 sealed class ThemeState {}
 
 final class DarkTheme extends ThemeState {
-   DarkTheme();
+  DarkTheme();
 }
 
 final class LightTheme extends ThemeState {
-   LightTheme();
+  LightTheme();
 }
 
 final class SystemTheme extends ThemeState {
-   SystemTheme();
+  SystemTheme();
 }

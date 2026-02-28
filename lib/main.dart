@@ -33,9 +33,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (context) => getIt<ThemeBloc>()),
-      ],
+      providers: [BlocProvider(create: (context) => getIt<ThemeBloc>())],
       child: BlocBuilder<ThemeBloc, ThemeState>(
         builder: (context, state) {
           ThemeMode themeMode;

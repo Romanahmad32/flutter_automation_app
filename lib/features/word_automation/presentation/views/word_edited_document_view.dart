@@ -11,8 +11,7 @@ class WordEditedDocumentView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: BlocListener<DocumentBloc, DocumentState>(
-        listener: (context, state) {
-        },
+        listener: (context, state) {},
         child: BlocBuilder<EditedDocumentBloc, EditedDocumentState>(
           builder: (context, state) {
             return switch (state) {
