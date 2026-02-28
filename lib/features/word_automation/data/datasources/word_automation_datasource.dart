@@ -28,7 +28,7 @@ class ApiWordAutomationDatasource implements WordAutomationDatasource {
       print('Received response: $responseData');
 
       return responseData['outputFilePath'];
-    } on DioException catch (e) {
+    } on DioException {
       throw Exception(
         'Beim bearbeiten des Word-Dokuments ist ein Fehler aufgetreten',
       );
