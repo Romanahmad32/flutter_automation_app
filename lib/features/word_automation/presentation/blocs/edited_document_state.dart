@@ -12,10 +12,13 @@ final class EditedDocumentInitial extends EditedDocumentState {}
 final class EditedDocumentLoaded extends EditedDocumentState {
   final String path;
 
-  const EditedDocumentLoaded(this.path);
+  /// Warnungen aus dem Backend, v. a. nicht ersetzte Platzhalter (Anf. 3.4).
+  final List<String> warnings;
+
+  const EditedDocumentLoaded(this.path, {this.warnings = const []});
 
   @override
-  List<Object> get props => [path];
+  List<Object> get props => [path, warnings];
 }
 
 final class EditedDocumentError extends EditedDocumentState {

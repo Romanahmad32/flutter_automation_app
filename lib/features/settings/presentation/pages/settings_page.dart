@@ -1,41 +1,55 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:automation_app/core/di/injection.dart';
+import 'package:automation_app/core/general_widgets/page_refresh/page_refresh_scope.dart';
+import 'package:automation_app/features/mailbox/presentation/blocs/mailbox_config_bloc/mailbox_config_bloc.dart';
+import 'package:automation_app/features/mailbox/presentation/views/mailbox_access_view.dart';
+import 'package:automation_app/features/settings/presentation/blocs/kanzlei_settings_bloc/kanzlei_settings_bloc.dart';
 import 'package:automation_app/features/settings/presentation/views/app_settings_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 @RoutePage()
 class SettingsPage extends StatelessWidget implements AutoRouteWrapper {
-  SettingsPage({super.key});
+  const SettingsPage({super.key});
 
   @override
   Widget wrappedRoute(BuildContext context) {
-    return this;
+    return PageRefreshScope(
+      builder: (context) => MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) =>
+                getIt<KanzleiSettingsBloc>()
+                  ..add(const LoadKanzleiSettingsEvent()),
+          ),
+          BlocProvider(
+            create: (context) =>
+                getIt<MailboxConfigBloc>()..add(const LoadMailboxConfigEvent()),
+          ),
+        ],
+        child: this,
+      ),
+    );
   }
-
-  final List<Widget> _tabs = [
-    Tab(icon: Icon(Icons.info), text: 'Allgemein'),
-    Tab(icon: Icon(Icons.fourteen_mp_outlined), text: 'Zeit'),
-    Tab(icon: Icon(Icons.history), text: 'Historie'),
-  ];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Einstellungen'), centerTitle: true),
-      body: DefaultTabController(
-        length: _tabs.length,
-        child: Column(
-          children: [
-            TabBar(tabs: _tabs),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  AppSettingsView(),
-                  Text('Settings'),
-                  Text('History'),
-                ],
-              ),
-            ),
-          ],
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Einstellungen'),
+          centerTitle: true,
+          actions: const [PageRefreshButton()],
+          bottom: const TabBar(
+            tabs: [
+              Tab(icon: Icon(Icons.business), text: 'Kanzlei'),
+              Tab(icon: Icon(Icons.mark_email_unread), text: 'Postfach-Zugang'),
+            ],
+          ),
+        ),
+        body: const TabBarView(
+          children: [AppSettingsView(), MailboxAccessView()],
         ),
       ),
     );

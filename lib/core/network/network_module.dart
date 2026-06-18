@@ -1,3 +1,4 @@
+import 'package:automation_app/core/network/textual_log_interceptor.dart';
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 
@@ -12,13 +13,8 @@ abstract class NetworkModule {
             receiveTimeout: const Duration(seconds: 3),
           ),
         )
-        ..interceptors.add(
-          LogInterceptor(
-            requestHeader: true,
-            requestBody: true,
-            responseHeader: true,
-            responseBody: true,
-            error: true,
-          ),
-        );
+        // Protokolliert JSON-/Text-Antworten weiterhin, lässt aber Binärdaten
+        // (z. B. die PDF-Konvertierung) weg, damit das Terminal nicht mit
+        // Byte-Listen geflutet wird.
+        ..interceptors.add(TextualLogInterceptor());
 }

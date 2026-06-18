@@ -1,12 +1,22 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:automation_app/core/di/injection.dart';
+import 'package:automation_app/core/general_widgets/page_refresh/page_refresh_scope.dart';
+import 'package:automation_app/features/mandanten/presentation/blocs/ablage_cubit/ablage_cubit.dart';
+import 'package:automation_app/features/settings/presentation/blocs/kanzlei_settings_bloc/kanzlei_settings_bloc.dart';
 import 'package:automation_app/features/word_automation/presentation/blocs/document_bloc.dart';
 import 'package:automation_app/features/word_automation/presentation/blocs/edited_document_bloc.dart';
-import 'package:automation_app/features/word_automation/presentation/views/word_edited_document_view.dart';
-import 'package:automation_app/features/word_automation/presentation/views/word_form_view.dart';
-import 'package:automation_app/features/word_automation/presentation/views/word_template_document_view.dart';
+import 'package:automation_app/features/word_automation/presentation/blocs/pdf_preview_bloc.dart';
+import 'package:automation_app/features/word_automation/presentation/blocs/rvg_calculation_bloc.dart';
+import 'package:automation_app/features/word_automation/presentation/blocs/wizard_cubit.dart';
+import 'package:automation_app/features/word_automation/presentation/views/wizard_step_fill_out.dart';
+import 'package:automation_app/features/word_automation/presentation/views/wizard_step_review.dart';
+import 'package:automation_app/features/word_automation/presentation/views/wizard_step_save.dart';
+import 'package:automation_app/features/word_automation/presentation/views/wizard_step_schadensaufstellung.dart';
+import 'package:automation_app/features/word_automation/presentation/widgets/wizard_step_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../form_template_setup/presentation/blocs/form_template_overview_bloc/form_template_overview_bloc.dart';
 
 @RoutePage()
 class WordAutomationPage extends StatelessWidget implements AutoRouteWrapper {
@@ -14,39 +24,121 @@ class WordAutomationPage extends StatelessWidget implements AutoRouteWrapper {
 
   @override
   Widget wrappedRoute(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (context) => getIt<DocumentBloc>()),
-        BlocProvider(create: (context) => getIt<EditedDocumentBloc>()),
-      ],
-      child: this,
+    return PageRefreshScope(
+      builder: (context) => MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (context) => getIt<DocumentBloc>()),
+          BlocProvider(create: (context) => getIt<EditedDocumentBloc>()),
+          BlocProvider(create: (context) => getIt<WizardCubit>()),
+          BlocProvider(create: (context) => getIt<TemplatePdfPreviewBloc>()),
+          BlocProvider(create: (context) => getIt<ResultPdfPreviewBloc>()),
+          BlocProvider(create: (context) => getIt<RvgCalculationBloc>()),
+          // Steuert die Akten-Ablage im Speicherschritt (§3.6).
+          BlocProvider(create: (context) => getIt<AblageCubit>()),
+          // Liefert die Titelzeilen-Farbe der Schadensaufstellung aus den
+          // Einstellungen für Vorschau und Dokumenterzeugung.
+          BlocProvider(
+            create: (context) =>
+                getIt<KanzleiSettingsBloc>()
+                  ..add(const LoadKanzleiSettingsEvent()),
+          ),
+          // Singleton-Bloc: per .value einbinden, damit er beim Dispose der
+          // Seite nicht geschlossen wird.
+          BlocProvider.value(
+            value: getIt<FormTemplateOverviewBloc>()
+              ..add(LoadFormTemplatesEvent()),
+          ),
+        ],
+        child: this,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<DocumentBloc, DocumentState>(
-      listener: (context, state) {
-        if (state is DocumentError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-      },
+    return MultiBlocListener(
+      listeners: [
+        // Sobald eine Vorlage gewählt ist, ihre PDF-Vorschau laden.
+        BlocListener<DocumentBloc, DocumentState>(
+          listenWhen: (previous, current) =>
+              current is DocumentLoaded && previous != current,
+          listener: (context, state) {
+            final path = (state as DocumentLoaded).path;
+            context.read<TemplatePdfPreviewBloc>().add(
+              LoadPdfPreviewEvent(path),
+            );
+          },
+        ),
+        BlocListener<DocumentBloc, DocumentState>(
+          listenWhen: (previous, current) => current is DocumentError,
+          listener: (context, state) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text((state as DocumentError).message),
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          },
+        ),
+        // Erfolgreich erzeugtes Dokument: zur Begutachtung springen
+        // und die Ergebnis-Vorschau laden.
+        BlocListener<EditedDocumentBloc, EditedDocumentState>(
+          listener: (context, state) {
+            switch (state) {
+              case EditedDocumentLoaded():
+                context.read<WizardCubit>().goToStep(WizardStep.review);
+                context.read<ResultPdfPreviewBloc>().add(
+                  LoadPdfPreviewEvent(state.path),
+                );
+              case EditedDocumentError():
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              default:
+                break;
+            }
+          },
+        ),
+      ],
       child: Scaffold(
         appBar: AppBar(
           centerTitle: true,
-          title: const Text('Word Vorlagen ausfüllen'),
-          backgroundColor: Theme.of(context).buttonTheme.colorScheme?.onPrimary,
+          title: Text(
+            'Word Vorlagen ausfüllen',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          actions: const [PageRefreshButton()],
         ),
-        body: const Row(
+        body: Column(
           children: [
-            WordFormView(),
-            WordTemplateDocumentView(),
-            WordEditedDocumentView(),
+            const WizardStepBar(),
+            const Divider(height: 1),
+            Expanded(
+              child: BlocBuilder<WizardCubit, WizardState>(
+                buildWhen: (previous, current) =>
+                    previous.currentStep != current.currentStep,
+                builder: (context, state) {
+                  // IndexedStack hält alle Schritte am Leben, damit z. B.
+                  // die Formulareingaben beim Vor- und Zurückblättern
+                  // erhalten bleiben. Es liegen immer alle vier Views auf
+                  // ihren festen Enum-Indizes — der Schadensaufstellungs-
+                  // Schritt ist bei Vorlagen ohne Auflistung schlicht nie
+                  // erreichbar (Guard in WizardCubit.goToStep).
+                  return IndexedStack(
+                    index: state.currentStep.index,
+                    children: const [
+                      WizardStepFillOut(),
+                      WizardStepSchadensaufstellung(),
+                      WizardStepReview(),
+                      WizardStepSave(),
+                    ],
+                  );
+                },
+              ),
+            ),
           ],
         ),
       ),

@@ -24,20 +24,43 @@ class AppSidebar extends StatelessWidget {
 
   static const _destinations = [
     (
-      icon: Icons.document_scanner_outlined,
-      selectedIcon: Icons.document_scanner,
-      label: 'Word Automation',
+    icon: Icons.directions_car_outlined,
+    selectedIcon: Icons.directions_car,
+    label: 'Zentralruf-Anfrage',
     ),
     (
-      icon: Icons.settings_outlined,
-      selectedIcon: Icons.settings,
-      label: 'Einstellungen',
+    icon: Icons.mark_email_read_outlined,
+    selectedIcon: Icons.mark_email_read,
+    label: 'Zentralruf-Antwort',
+    ),
+    (icon: Icons.inbox_outlined, selectedIcon: Icons.inbox, label: 'Postfach'),
+    (
+    icon: Icons.document_scanner_outlined,
+    selectedIcon: Icons.document_scanner,
+    label: 'Word Automation',
+    ),
+    (
+    icon: Icons.drive_file_rename_outline_outlined,
+    selectedIcon: Icons.drive_file_rename_outline,
+    label: 'Vorlagen Verwalten',
+    ),
+    (
+    icon: Icons.groups_outlined,
+    selectedIcon: Icons.groups,
+    label: 'Mandanten',
+    ),
+    (
+    icon: Icons.settings_outlined,
+    selectedIcon: Icons.settings,
+    label: 'Einstellungen',
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme = Theme
+        .of(context)
+        .colorScheme;
 
     return AnimatedContainer(
       duration: animationDuration,
@@ -52,15 +75,45 @@ class AppSidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Markenkopf: Toggle (immer sichtbar) und – aufgeklappt – ein
+          // Brand-Icon mit App-Name, damit die Leiste nicht nackt beginnt.
           SizedBox(
             height: 64,
-            width: collapsedWidth,
-            child: Center(
-              child: IconButton(
-                onPressed: onToggle,
-                icon: const Icon(Icons.menu),
-                tooltip: isExtended ? 'Zuklappen' : 'Aufklappen',
-              ),
+            child: Row(
+              children: [
+                // Breite des Rahmens (1 px) abziehen, damit die Zeile in den
+                // eingeklappten Innenraum passt und nicht überläuft.
+                SizedBox(
+                  width: collapsedWidth - 1,
+                  child: Center(
+                    child: IconButton(
+                      onPressed: onToggle,
+                      icon: const Icon(Icons.menu),
+                      tooltip: isExtended ? 'Zuklappen' : 'Aufklappen',
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ClipRect(
+                    child: AnimatedAlign(
+                      duration: animationDuration,
+                      curve: Curves.easeInOut,
+                      alignment: Alignment.centerLeft,
+                      widthFactor: isExtended ? 1 : 0,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.balance,
+                            color: colorScheme.primary,
+                            size: 22,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
 

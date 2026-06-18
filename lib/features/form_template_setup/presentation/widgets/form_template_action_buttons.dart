@@ -1,0 +1,99 @@
+import 'package:automation_app/core/general_widgets/buttons/custom_rectangular_button.dart';
+import 'package:automation_app/features/form_template_setup/domain/entities/field_data.dart';
+import 'package:automation_app/features/form_template_setup/presentation/blocs/form_template_data_bloc/form_template_data_bloc.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:reactive_forms/reactive_forms.dart';
+
+class FormTemplateActionButtons extends StatelessWidget {
+  final VoidCallback onCancel;
+  final List<FieldData> fields;
+  final int? existingItemId; // 1. Added optional ID
+  final String? wordFilePathOhneAuflistung;
+  final String? wordFilePathMitAuflistung;
+
+  const FormTemplateActionButtons({
+    super.key,
+    required this.onCancel,
+    required this.fields,
+    this.existingItemId, // 2. Add to constructor
+    this.wordFilePathOhneAuflistung,
+    this.wordFilePathMitAuflistung,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isEditing = existingItemId != null; // 3. Helper to check mode
+
+    return Row(
+      spacing: 15,
+      children: [
+        CustomRectangularButton(
+          onPressed: onCancel,
+          buttonStyle: ElevatedButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4.0),
+            ),
+            backgroundColor: theme.colorScheme.surface,
+            foregroundColor: theme.colorScheme.onSurface,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          ),
+          label: const Text('Abbrechen'),
+        ),
+        ReactiveFormConsumer(
+          builder: (context, formGroup, child) {
+            return CustomRectangularButton(
+              // 4. Dynamically change the button label
+              label: Text(
+                isEditing ? 'Vorlage speichern' : 'Vorlage erstellen',
+              ),
+              onPressed: formGroup.valid
+                  ? () {
+                if (wordFilePathOhneAuflistung == null &&
+                    wordFilePathMitAuflistung == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Bitte mindestens eine Word-Datei verknüpfen '
+                            '(ohne und/oder mit Auflistung).',
+                      ),
+                    ),
+                  );
+                  return;
+                }
+                final List<FieldData> formData = fields.map((field) {
+                  final String labelValue = formGroup
+                      .control(field.label)
+                      .value;
+                  return FieldData(
+                    order: fields.indexOf(field),
+                    label: labelValue,
+                    required: field.required,
+                    // 5. Fixed to use actual field state instead of hardcoded 'true'
+                    inputType: field.inputType,
+                  );
+                }).toList();
+
+                context.read<FormTemplateDataBloc>().add(
+                  SubmitFormTemplateDataEvent(
+                    existingItemId: existingItemId,
+                    // 6. Pass the ID to the BLoC event
+                    templateName: formGroup
+                        .control('templateName')
+                        .value,
+                    formData: formData,
+                    wordFilePathOhneAuflistung:
+                    wordFilePathOhneAuflistung,
+                    wordFilePathMitAuflistung: wordFilePathMitAuflistung,
+                  ),
+                );
+              }
+                  : null,
+            );
+          },
+        ),
+      ],
+    );
+  }
+}

@@ -26,6 +26,25 @@ class DefaultTextField<T> extends StatelessWidget {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(10)),
         ),
+        // Gleicher Eckenradius im Fehlerzustand (sonst greift der globale
+        // error-Border aus dem Theme mit abweichendem Radius).
+        errorBorder: OutlineInputBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(10)),
+          borderSide: BorderSide(color: Theme
+              .of(context)
+              .colorScheme
+              .error),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(10)),
+          borderSide: BorderSide(
+            color: Theme
+                .of(context)
+                .colorScheme
+                .error,
+            width: 2,
+          ),
+        ),
       ),
       onChanged: onChanged,
       validationMessages: validationMessages,

@@ -28,10 +28,10 @@ class SidebarItem extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     final bgColor = isSelected
-        ? colorScheme.secondaryContainer
+        ? colorScheme.primary.withValues(alpha: 0.15)
         : Colors.transparent;
     final fgColor = isSelected
-        ? colorScheme.onSecondaryContainer
+        ? colorScheme.primary
         : colorScheme.onSurfaceVariant;
 
     return Padding(
