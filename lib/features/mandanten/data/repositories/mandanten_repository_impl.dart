@@ -1,0 +1,132 @@
+import 'package:automation_app/core/general_classes/failures/failure.dart';
+import 'package:automation_app/core/general_classes/usecases/use_case.dart';
+import 'package:automation_app/features/mandanten/data/datasources/akten_filesystem_datasource.dart';
+import 'package:automation_app/features/mandanten/data/datasources/local_mandant_datasource.dart';
+import 'package:automation_app/features/mandanten/domain/entities/akte.dart';
+import 'package:automation_app/features/mandanten/domain/entities/create_mandant_request.dart';
+import 'package:automation_app/features/mandanten/domain/entities/mandant.dart';
+import 'package:automation_app/features/mandanten/domain/repositories/mandanten_repository.dart';
+import 'package:automation_app/features/settings/domain/repositories/kanzlei_settings_repository.dart';
+import 'package:injectable/injectable.dart';
+
+@Injectable(as: MandantenRepository)
+class MandantenRepositoryImpl implements MandantenRepository {
+  final LocalMandantDatasource _localDatasource;
+  final AktenFilesystemDatasource _aktenDatasource;
+  final KanzleiSettingsRepository _settingsRepository;
+
+  MandantenRepositoryImpl(
+    this._localDatasource,
+    this._aktenDatasource,
+    this._settingsRepository,
+  );
+
+  @override
+  Future<Either<Failure, List<Mandant>>> getMandanten() async {
+    try {
+      return Right(await _localDatasource.loadMandanten());
+    } catch (e) {
+      return Left(LocalFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Mandant>> createMandant(
+    CreateMandantRequest request,
+  ) async {
+    try {
+      return Right(await _localDatasource.createMandant(request));
+    } catch (e) {
+      return Left(LocalFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Mandant>> updateMandant(Mandant mandant) async {
+    try {
+      return Right(await _localDatasource.updateMandant(mandant));
+    } catch (e) {
+      return Left(LocalFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteMandant(int id) async {
+    try {
+      await _localDatasource.deleteMandant(id);
+      return Right(null);
+    } catch (e) {
+      return Left(LocalFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<Akte>>> getAkten() async {
+    try {
+      final stammordner = await _ladeStammordner();
+      return Right(await _aktenDatasource.scanAkten(stammordner));
+    } catch (e) {
+      return Left(LocalFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Mandant>> verknuepfeOrdner({
+    required int mandantId,
+    required String ordnername,
+  }) async {
+    try {
+      final aktualisiert = await _verknuepfe(mandantId, ordnername);
+      return Right(aktualisiert);
+    } catch (e) {
+      return Left(LocalFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> legeDokumentAb(
+    LegeDokumentAbParams params,
+  ) async {
+    try {
+      final stammordner = await _ladeStammordner();
+      final zielpfad = await _aktenDatasource.legeDokumentAb(
+        stammordner: stammordner,
+        ordnername: params.aktenOrdnername,
+        unterordnerName: params.unterordnerName,
+        quelldateiPfad: params.quelldateiPfad,
+      );
+      // Register und Dateisystem in Einklang halten: den (ggf. neu angelegten)
+      // Akten-Ordner dem Mandanten zuordnen.
+      await _verknuepfe(params.mandantId, params.aktenOrdnername);
+      return Right(zielpfad);
+    } catch (e) {
+      return Left(LocalFailure(message: e.toString()));
+    }
+  }
+
+  /// Fügt [ordnername] zu den Akten des Mandanten hinzu (idempotent) und
+  /// speichert. Gibt den aktualisierten Mandanten zurück.
+  Future<Mandant> _verknuepfe(int mandantId, String ordnername) async {
+    final mandanten = await _localDatasource.loadMandanten();
+    final mandant = mandanten.firstWhere(
+      (m) => m.id == mandantId,
+      orElse: () =>
+          throw StateError('Mandant mit ID $mandantId nicht gefunden'),
+    );
+    if (mandant.aktenOrdnernamen.contains(ordnername)) {
+      return mandant;
+    }
+    final aktualisiert = mandant.copyWith(
+      aktenOrdnernamen: [...mandant.aktenOrdnernamen, ordnername],
+    );
+    return _localDatasource.updateMandant(aktualisiert);
+  }
+
+  Future<String> _ladeStammordner() async {
+    final result = await _settingsRepository.getSettings();
+    return switch (result) {
+      Right(value: final settings) => settings.aktenStammordner,
+      Left() => '',
+    };
+  }
+}

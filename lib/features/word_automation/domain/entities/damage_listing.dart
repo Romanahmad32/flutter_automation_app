@@ -1,0 +1,63 @@
+import 'package:equatable/equatable.dart';
+
+/// Schadensaufstellung für Vorlagen "mit Auflistung". Wird im Backend als Tabelle
+/// am Platzhalter {{Schadensaufstellung}} eingefügt; die RVG-Kosten werden daraus berechnet.
+class DamageListing extends Equatable {
+  final List<DamageItem> items;
+
+  /// Gebührensatz der Geschäftsgebühr, üblicherweise 1,3.
+  final double gebuehrensatz;
+
+  /// True, wenn der Mandant nicht vorsteuerabzugsberechtigt ist (Umsatzsteuer ausweisen).
+  final bool applyVat;
+
+  /// Manuell korrigierte Geschäftsgebühr in €; null = automatisch nach § 13 RVG.
+  final double? geschaeftsgebuehrOverride;
+
+  /// Manuell korrigierte Auslagenpauschale in €; null = Nr. 7002 VV RVG (20 %, max. 20 €).
+  final double? auslagenpauschaleOverride;
+
+  /// Farbe der Titelzeile der Tabelle als Hex-Wert "RRGGBB" (aus den Einstellungen);
+  /// null = Standardgrau des Backends.
+  final String? headerColorHex;
+
+  const DamageListing({
+    required this.items,
+    this.gebuehrensatz = 1.3,
+    this.applyVat = false,
+    this.geschaeftsgebuehrOverride,
+    this.auslagenpauschaleOverride,
+    this.headerColorHex,
+  });
+
+  /// Kopie mit der Titelzeilen-Farbe aus den Einstellungen (wird beim Erfassen
+  /// im Wizard ergänzt, das Formular selbst kennt die Einstellungen nicht).
+  DamageListing withHeaderColor(String? hex) => DamageListing(
+    items: items,
+    gebuehrensatz: gebuehrensatz,
+    applyVat: applyVat,
+    geschaeftsgebuehrOverride: geschaeftsgebuehrOverride,
+    auslagenpauschaleOverride: auslagenpauschaleOverride,
+    headerColorHex: hex,
+  );
+
+  @override
+  List<Object?> get props => [
+    items,
+    gebuehrensatz,
+    applyVat,
+    geschaeftsgebuehrOverride,
+    auslagenpauschaleOverride,
+    headerColorHex,
+  ];
+}
+
+class DamageItem extends Equatable {
+  final String description;
+  final double amount;
+
+  const DamageItem({required this.description, required this.amount});
+
+  @override
+  List<Object> get props => [description, amount];
+}
