@@ -24,43 +24,40 @@ class AppSidebar extends StatelessWidget {
 
   static const _destinations = [
     (
-    icon: Icons.directions_car_outlined,
-    selectedIcon: Icons.directions_car,
-    label: 'Zentralruf-Anfrage',
+      icon: Icons.directions_car_outlined,
+      selectedIcon: Icons.directions_car,
+      label: 'Zentralruf-Anfrage',
     ),
     (
-    icon: Icons.mark_email_read_outlined,
-    selectedIcon: Icons.mark_email_read,
-    label: 'Zentralruf-Antwort',
-    ),
-    (icon: Icons.inbox_outlined, selectedIcon: Icons.inbox, label: 'Postfach'),
-    (
-    icon: Icons.document_scanner_outlined,
-    selectedIcon: Icons.document_scanner,
-    label: 'Word Automation',
+      icon: Icons.mark_email_read_outlined,
+      selectedIcon: Icons.mark_email_read,
+      label: 'Zentralruf-Antworten',
     ),
     (
-    icon: Icons.drive_file_rename_outline_outlined,
-    selectedIcon: Icons.drive_file_rename_outline,
-    label: 'Vorlagen Verwalten',
+      icon: Icons.document_scanner_outlined,
+      selectedIcon: Icons.document_scanner,
+      label: 'Word Automation',
     ),
     (
-    icon: Icons.groups_outlined,
-    selectedIcon: Icons.groups,
-    label: 'Mandanten',
+      icon: Icons.drive_file_rename_outline_outlined,
+      selectedIcon: Icons.drive_file_rename_outline,
+      label: 'Vorlagen Verwalten',
     ),
     (
-    icon: Icons.settings_outlined,
-    selectedIcon: Icons.settings,
-    label: 'Einstellungen',
+      icon: Icons.groups_outlined,
+      selectedIcon: Icons.groups,
+      label: 'Mandanten',
+    ),
+    (
+      icon: Icons.settings_outlined,
+      selectedIcon: Icons.settings,
+      label: 'Einstellungen',
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme
-        .of(context)
-        .colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return AnimatedContainer(
       duration: animationDuration,
@@ -103,10 +100,14 @@ class AppSidebar extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            Icons.balance,
-                            color: colorScheme.primary,
-                            size: 22,
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: Image.asset(
+                              'assets/icon/app_icon.png',
+                              width: 24,
+                              height: 24,
+                              filterQuality: FilterQuality.medium,
+                            ),
                           ),
                         ],
                       ),
@@ -141,17 +142,20 @@ class AppSidebar extends StatelessWidget {
             child: Center(
               child: BlocBuilder<ThemeBloc, ThemeState>(
                 builder: (context, themeState) {
-                  final isLight = themeState is LightTheme;
+                  // Anhand der tatsächlich aktiven Helligkeit umschalten, damit
+                  // der Schnellschalter auch im Systemmodus das Erwartete tut.
+                  final isDark =
+                      Theme.of(context).brightness == Brightness.dark;
                   return IconButton(
                     onPressed: () {
                       context.read<ThemeBloc>().add(
-                        ChangeThemeEvent(
-                          themeMode: isLight ? ThemeMode.dark : ThemeMode.light,
+                        ChangeThemeModeEvent(
+                          isDark ? ThemeMode.light : ThemeMode.dark,
                         ),
                       );
                     },
-                    icon: Icon(isLight ? Icons.dark_mode : Icons.light_mode),
-                    tooltip: isLight ? 'Dunkel' : 'Hell',
+                    icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
+                    tooltip: isDark ? 'Hell' : 'Dunkel',
                   );
                 },
               ),

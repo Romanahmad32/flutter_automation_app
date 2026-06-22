@@ -23,7 +23,6 @@ class _AppShellPageState extends State<AppShellPage> {
     return AutoTabsRouter(
       routes: [
         const ZentralrufRoute(),
-        const ZentralrufReplyRoute(),
         const MailboxInboxRoute(),
         const WordAutomationRoute(),
         const FormTemplateManagementStackRoute(),

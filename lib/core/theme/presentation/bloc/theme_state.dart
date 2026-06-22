@@ -1,16 +1,15 @@
 part of 'theme_bloc.dart';
 
 @immutable
-sealed class ThemeState {}
+class ThemeState extends Equatable {
+  final ThemePreferences preferences;
 
-final class DarkTheme extends ThemeState {
-  DarkTheme();
-}
+  const ThemeState(this.preferences);
 
-final class LightTheme extends ThemeState {
-  LightTheme();
-}
+  AppThemeVariant get variant => preferences.variant;
 
-final class SystemTheme extends ThemeState {
-  SystemTheme();
+  ThemeMode get mode => preferences.mode;
+
+  @override
+  List<Object?> get props => [preferences];
 }

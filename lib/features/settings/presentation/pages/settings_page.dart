@@ -5,6 +5,7 @@ import 'package:automation_app/features/mailbox/presentation/blocs/mailbox_confi
 import 'package:automation_app/features/mailbox/presentation/views/mailbox_access_view.dart';
 import 'package:automation_app/features/settings/presentation/blocs/kanzlei_settings_bloc/kanzlei_settings_bloc.dart';
 import 'package:automation_app/features/settings/presentation/views/app_settings_view.dart';
+import 'package:automation_app/features/settings/presentation/views/appearance_settings_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -35,7 +36,7 @@ class SettingsPage extends StatelessWidget implements AutoRouteWrapper {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Einstellungen'),
@@ -45,11 +46,16 @@ class SettingsPage extends StatelessWidget implements AutoRouteWrapper {
             tabs: [
               Tab(icon: Icon(Icons.business), text: 'Kanzlei'),
               Tab(icon: Icon(Icons.mark_email_unread), text: 'Postfach-Zugang'),
+              Tab(icon: Icon(Icons.palette_outlined), text: 'Darstellung'),
             ],
           ),
         ),
         body: const TabBarView(
-          children: [AppSettingsView(), MailboxAccessView()],
+          children: [
+            AppSettingsView(),
+            MailboxAccessView(),
+            AppearanceSettingsView(),
+          ],
         ),
       ),
     );

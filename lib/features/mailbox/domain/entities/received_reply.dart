@@ -22,6 +22,10 @@ class ReceivedReply extends Equatable {
   /// zur Referenz, Negativ-Antwort) — identisch zur manuellen Auswertung.
   final List<String> warnings;
 
+  /// Der aus der Mail gewonnene Rohtext, der durch den Parser lief. Fallback/
+  /// Diagnose, falls das automatische Mapping unvollständig ist.
+  final String? rawText;
+
   const ReceivedReply({
     required this.id,
     required this.receivedAt,
@@ -30,6 +34,7 @@ class ReceivedReply extends Equatable {
     required this.acknowledged,
     required this.data,
     required this.warnings,
+    this.rawText,
   });
 
   factory ReceivedReply.fromJson(Map<String, dynamic> json) {
@@ -43,6 +48,7 @@ class ReceivedReply extends Equatable {
       acknowledged: json['acknowledged'] as bool? ?? false,
       data: ZentralrufReplyData.fromJson(json['data'] as Map<String, dynamic>),
       warnings: List<String>.from(json['warnings'] as List? ?? const []),
+      rawText: json['rawText'] as String?,
     );
   }
 
@@ -55,5 +61,6 @@ class ReceivedReply extends Equatable {
     acknowledged,
     data,
     warnings,
+    rawText,
   ];
 }

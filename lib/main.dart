@@ -1,6 +1,8 @@
 import 'package:automation_app/core/di/injection.dart';
 import 'package:automation_app/core/router/app_router.dart';
+import 'package:automation_app/core/theme/domain/theme_preferences.dart';
 import 'package:automation_app/core/theme/presentation/bloc/theme_bloc.dart';
+import 'package:automation_app/core/theme/presentation/kanzlei_theme.dart';
 import 'package:automation_app/core/theme/presentation/theme.dart';
 import 'package:automation_app/core/theme/presentation/util.dart';
 import 'package:flutter/material.dart';
@@ -21,28 +23,29 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    TextTheme textTheme = createTextTheme(context, 'Inter', 'Inter');
-    MaterialTheme theme = MaterialTheme(textTheme);
+    // Standard-Design (blaues Material-Theme) und Kanzlei-Design (Variante A)
+    // werden beide aufgebaut; die aktive Familie wählt der ThemeBloc.
+    final MaterialTheme standardTheme = MaterialTheme(
+      createTextTheme(context, 'Inter', 'Inter'),
+    );
+    final MaterialTheme kanzleiTheme = KanzleiMaterialTheme(
+      createKanzleiTextTheme(context),
+    );
     return MultiBlocProvider(
-      providers: [BlocProvider(create: (context) => getIt<ThemeBloc>())],
+      providers: [
+        BlocProvider(
+          create: (context) => getIt<ThemeBloc>()..add(LoadThemeEvent()),
+        ),
+      ],
       child: BlocBuilder<ThemeBloc, ThemeState>(
         builder: (context, state) {
-          ThemeMode themeMode;
-          switch (state) {
-            case DarkTheme():
-              themeMode = ThemeMode.dark;
-              break;
-            case LightTheme():
-              themeMode = ThemeMode.light;
-              break;
-            case SystemTheme():
-              themeMode = ThemeMode.system;
-              break;
-          }
+          final MaterialTheme theme = state.variant == AppThemeVariant.kanzlei
+              ? kanzleiTheme
+              : standardTheme;
           return MaterialApp.router(
             debugShowCheckedModeBanner: false,
             routerConfig: _router.config(),
-            themeMode: themeMode,
+            themeMode: state.mode,
             darkTheme: theme.dark(),
             theme: theme.light(),
             // Deutsche Texte für Material-Dialoge (z. B. den Datums-Picker).

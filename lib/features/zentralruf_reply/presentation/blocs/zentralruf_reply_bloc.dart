@@ -16,6 +16,7 @@ class ZentralrufReplyBloc
 
   ZentralrufReplyBloc(this._parseReply) : super(ZentralrufReplyInitial()) {
     on<ParseZentralrufReplyEvent>(_onParseReplyEvent);
+    on<ResetZentralrufReplyEvent>((_, emit) => emit(ZentralrufReplyInitial()));
   }
 
   Future<void> _onParseReplyEvent(

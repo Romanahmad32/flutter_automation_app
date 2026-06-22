@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:automation_app/core/general_classes/usecases/use_case.dart';
+import 'package:automation_app/features/mailbox/data/datasources/mailbox_hub.dart';
 import 'package:automation_app/features/mailbox/domain/entities/mailbox_status.dart';
 import 'package:automation_app/features/mailbox/domain/entities/received_reply.dart';
 import 'package:automation_app/features/mailbox/domain/repositories/mailbox_repository.dart';
@@ -9,13 +12,23 @@ import 'package:injectable/injectable.dart';
 part 'mailbox_inbox_state.dart';
 
 /// Versorgt die Inbox-Ansicht: lädt Status und erfasste Antworten und quittiert
-/// einzelne Treffer. Da der Monitor im Backend läuft (ereignisbasiert per IDLE),
-/// fragt die Ansicht den Stand beim Öffnen und auf Wunsch per "Aktualisieren" ab.
+/// einzelne Treffer. Der Monitor läuft im Backend (ereignisbasiert per IDLE) und
+/// meldet neue Treffer/Statuswechsel per SignalR ([MailboxHub]) — darauf hin lädt
+/// die Ansicht den Stand live nach, ohne dass der Anwalt „Aktualisieren" drücken
+/// muss. Manuelles Aktualisieren bleibt als Rückfallebene erhalten.
 @injectable
 class MailboxInboxCubit extends Cubit<MailboxInboxState> {
   final MailboxRepository _repository;
+  final MailboxHub _hub;
+  StreamSubscription<void>? _replySub;
+  StreamSubscription<void>? _statusSub;
 
-  MailboxInboxCubit(this._repository) : super(const MailboxInboxState());
+  MailboxInboxCubit(this._repository, this._hub)
+    : super(const MailboxInboxState()) {
+    _replySub = _hub.onReplyReceived.listen((_) => refresh());
+    _statusSub = _hub.onStatusChanged.listen((_) => refresh());
+    _hub.ensureConnected();
+  }
 
   Future<void> refresh() async {
     emit(state.copyWith(loading: true, clearError: true));
@@ -57,5 +70,12 @@ class MailboxInboxCubit extends Cubit<MailboxInboxState> {
       case Left(value: final failure):
         emit(state.copyWith(error: failure.message));
     }
+  }
+
+  @override
+  Future<void> close() {
+    _replySub?.cancel();
+    _statusSub?.cancel();
+    return super.close();
   }
 }

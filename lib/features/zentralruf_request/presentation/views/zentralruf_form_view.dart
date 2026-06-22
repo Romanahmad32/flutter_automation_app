@@ -42,6 +42,50 @@ class _ZentralrufFormViewState extends State<ZentralrufFormView> {
     ValidationMessage.pattern: (Object _) => _kennzeichenHinweis,
   };
 
+  // Unfalluhrzeit im 24-Stunden-Format, z. B. "14:05" (Stunde ein- oder zweistellig).
+  static final _uhrzeitRegExp = RegExp(r'^([01]?\d|2[0-3]):[0-5]\d$');
+
+  static const _uhrzeitHinweis = 'Im Format HH:MM angeben, z. B. 14:05';
+
+  // Polizeiliche Vorgangsnummer, z. B. "VU/1234567/2026"
+  // (Kürzel/Ziffernfolge/vierstelliges Jahr).
+  static final _vorgangsnummerRegExp = RegExp(
+    r'^[A-ZÄÖÜ]{1,5}/\d{1,9}/\d{4}$',
+    caseSensitive: false,
+  );
+
+  static const _vorgangsnummerHinweis = 'Format: VU/1234567/2026';
+
+  /// Prüft das Uhrzeit-Format, lässt leere Werte aber zu (Feld ist optional).
+  static Map<String, dynamic>? _uhrzeitValidator(
+    AbstractControl<dynamic> control,
+  ) {
+    final value = (control.value as String?)?.trim() ?? '';
+    if (value.isEmpty || _uhrzeitRegExp.hasMatch(value)) {
+      return null;
+    }
+    return {ValidationMessage.pattern: true};
+  }
+
+  static final _uhrzeitMessages = {
+    ValidationMessage.pattern: (Object _) => _uhrzeitHinweis,
+  };
+
+  /// Prüft die Vorgangsnummer, lässt leere Werte aber zu (Feld ist optional).
+  static Map<String, dynamic>? _vorgangsnummerValidator(
+    AbstractControl<dynamic> control,
+  ) {
+    final value = (control.value as String?)?.trim() ?? '';
+    if (value.isEmpty || _vorgangsnummerRegExp.hasMatch(value)) {
+      return null;
+    }
+    return {ValidationMessage.pattern: true};
+  }
+
+  static final _vorgangsnummerMessages = {
+    ValidationMessage.pattern: (Object _) => _vorgangsnummerHinweis,
+  };
+
   bool _withGeschaedigter = false;
 
   /// True, sobald der Anwender die Referenz selbst bearbeitet hat. Danach wird
@@ -94,6 +138,14 @@ class _ZentralrufFormViewState extends State<ZentralrufFormView> {
     'geschaedigterOrt': FormControl<String>(),
     'geschaedigterKennzeichen': FormControl<String>(
       validators: [Validators.delegate(_kennzeichenValidator)],
+    ),
+    // Unfallhergang (optional) — Straße und Ort, Uhrzeit, polizeiliche Vorgangsnummer.
+    'unfallort': FormControl<String>(),
+    'unfalluhrzeit': FormControl<String>(
+      validators: [Validators.delegate(_uhrzeitValidator)],
+    ),
+    'polizeiVorgangsnummer': FormControl<String>(
+      validators: [Validators.delegate(_vorgangsnummerValidator)],
     ),
     // Vorschau der resultierenden Referenz; wird automatisch befüllt, bis der
     // Anwender sie selbst bearbeitet (siehe [_referenzManuallyEdited]).
@@ -350,6 +402,32 @@ class _ZentralrufFormViewState extends State<ZentralrufFormView> {
                           validationMessages: _kennzeichenMessages,
                         ),
                       ],
+                    ],
+                  ),
+                  FormSection(
+                    icon: Icons.car_crash_outlined,
+                    title: 'Unfallhergang',
+                    subtitle:
+                        'Optional — Angaben zum Unfall für die spätere '
+                        'Akten- und Schreibenerstellung.',
+                    children: [
+                      const GeneralTextField<String>(
+                        labelText:
+                            'Unfallort (Straße und Ort, z. B. Am Ulmenrück, '
+                            'Frankfurt am Main)',
+                        formControlName: 'unfallort',
+                      ),
+                      GeneralTextField<String>(
+                        labelText: 'Unfalluhrzeit (z. B. 14:05)',
+                        formControlName: 'unfalluhrzeit',
+                        validationMessages: _uhrzeitMessages,
+                      ),
+                      GeneralTextField<String>(
+                        labelText:
+                            'Polizeiliche Vorgangsnummer (z. B. VU/1234567/2026)',
+                        formControlName: 'polizeiVorgangsnummer',
+                        validationMessages: _vorgangsnummerMessages,
+                      ),
                     ],
                   ),
                   Align(

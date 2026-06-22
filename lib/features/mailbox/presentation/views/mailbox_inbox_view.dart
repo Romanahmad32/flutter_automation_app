@@ -7,16 +7,22 @@ import 'package:automation_app/features/mailbox/presentation/blocs/mailbox_inbox
 import 'package:automation_app/features/zentralruf_reply/domain/entities/zentralruf_reply_data.dart';
 import 'package:automation_app/features/zentralruf_reply/presentation/blocs/offene_anfragen_cubit.dart';
 import 'package:automation_app/features/zentralruf_reply/presentation/blocs/vorgangsdaten_cubit.dart';
+import 'package:automation_app/features/zentralruf_reply/presentation/blocs/zentralruf_reply_bloc.dart';
+import 'package:automation_app/features/zentralruf_reply/presentation/widgets/manual_reply_input.dart';
+import 'package:automation_app/features/zentralruf_reply/presentation/widgets/vorgangsdaten_form.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// Reihenfolge der Tabs siehe AppShellPage: Word Automation liegt auf Index 3.
-const int _wordAutomationTabIndex = 3;
+/// Reihenfolge der Tabs siehe AppShellPage: nach dem Vereinen von Postfach und
+/// manueller Antwort liegt Word Automation auf Index 2.
+const int _wordAutomationTabIndex = 2;
 
-/// Inbox-Ansicht der automatisch erfassten Zentralruf-Antworten: oben der
-/// Verbindungsstatus der Überwachung, darunter links die Trefferliste und rechts
-/// die Detailansicht mit "Daten übernehmen" (füllt den Vorgang ohne Abtippen)
-/// und "Erledigt".
+/// Vereinte Ansicht „Zentralruf-Antworten": oben der Verbindungsstatus der
+/// Überwachung, links die automatisch erfassten Treffer plus der Einstieg
+/// „Manuell einfügen", rechts das gemeinsame, editierbare Vorgangsdaten-Formular
+/// ([VorgangsdatenForm]) — egal ob die Antwort per Postfach kam oder von Hand
+/// eingefügt wurde. „Übernehmen" füllt den Vorgang vor und wechselt zu Word.
 class MailboxInboxView extends StatefulWidget {
   const MailboxInboxView({super.key});
 
@@ -26,15 +32,13 @@ class MailboxInboxView extends StatefulWidget {
 
 class _MailboxInboxViewState extends State<MailboxInboxView> {
   String? _selectedId;
+  bool _manualMode = false;
 
-  void _uebernehmen(ReceivedReply reply) {
-    getIt<VorgangsdatenCubit>().uebernehmen(reply.data);
-    if (reply.data.referenz case final referenz?) {
+  void _gemeinsamUebernehmen(ZentralrufReplyData daten) {
+    getIt<VorgangsdatenCubit>().uebernehmen(daten);
+    if (daten.referenz case final referenz?) {
       getIt<OffeneAnfragenCubit>().beantwortet(referenz);
     }
-    // Mit der Übernahme gilt der Treffer als erledigt.
-    context.read<MailboxInboxCubit>().acknowledge(reply.id);
-    setState(() => _selectedId = null);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(
@@ -45,6 +49,27 @@ class _MailboxInboxViewState extends State<MailboxInboxView> {
       ),
     );
     AutoTabsRouter.of(context).setActiveIndex(_wordAutomationTabIndex);
+  }
+
+  void _treffferUebernehmen(ReceivedReply reply, ZentralrufReplyData daten) {
+    // Mit der Übernahme gilt der erfasste Treffer als erledigt.
+    context.read<MailboxInboxCubit>().acknowledge(reply.id);
+    setState(() => _selectedId = null);
+    _gemeinsamUebernehmen(daten);
+  }
+
+  void _manuellUebernehmen(ZentralrufReplyData daten) {
+    setState(() => _manualMode = false);
+    context.read<ZentralrufReplyBloc>().add(const ResetZentralrufReplyEvent());
+    _gemeinsamUebernehmen(daten);
+  }
+
+  void _manuellOeffnen() {
+    context.read<ZentralrufReplyBloc>().add(const ResetZentralrufReplyEvent());
+    setState(() {
+      _manualMode = true;
+      _selectedId = null;
+    });
   }
 
   @override
@@ -61,52 +86,187 @@ class _MailboxInboxViewState extends State<MailboxInboxView> {
             _StatusBanner(status: state.status, error: state.error),
             const Divider(height: 1),
             Expanded(
-              child: state.loading && replies.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : replies.isEmpty
-                  ? _EmptyHint(status: state.status)
-                  : Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        SizedBox(
-                          width: 360,
-                          child: _ReplyList(
-                            replies: replies,
-                            selectedId: _selectedId,
-                            onSelect: (id) => setState(() => _selectedId = id),
-                          ),
-                        ),
-                        const VerticalDivider(width: 1),
-                        Expanded(
-                          child: selected == null
-                              ? const Center(
-                                  child: Padding(
-                                    padding: EdgeInsets.all(24),
-                                    child: Text(
-                                      'Eine Antwort links auswählen, um die '
-                                      'erkannten Daten zu sehen.',
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                )
-                              : _ReplyDetail(
-                                  key: ValueKey(selected.id),
-                                  reply: selected,
-                                  onUebernehmen: () => _uebernehmen(selected),
-                                  onErledigt: () {
-                                    context
-                                        .read<MailboxInboxCubit>()
-                                        .acknowledge(selected.id);
-                                    setState(() => _selectedId = null);
-                                  },
-                                ),
-                        ),
-                      ],
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: 360,
+                    child: _ReplyList(
+                      replies: replies,
+                      selectedId: _selectedId,
+                      manualSelected: _manualMode,
+                      loading: state.loading && replies.isEmpty,
+                      status: state.status,
+                      onSelect: (id) => setState(() {
+                        _selectedId = id;
+                        _manualMode = false;
+                      }),
+                      onManual: _manuellOeffnen,
                     ),
+                  ),
+                  const VerticalDivider(width: 1),
+                  Expanded(
+                    child: _DetailPane(
+                      manualMode: _manualMode,
+                      selected: selected,
+                      onTrefferUebernehmen: _treffferUebernehmen,
+                      onManuellUebernehmen: _manuellUebernehmen,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         );
       },
+    );
+  }
+}
+
+/// Rechte Seite: manuelles Eingabepanel bzw. dessen Ergebnis, ein ausgewählter
+/// Treffer oder ein Platzhalter.
+class _DetailPane extends StatelessWidget {
+  final bool manualMode;
+  final ReceivedReply? selected;
+  final void Function(ReceivedReply reply, ZentralrufReplyData daten)
+  onTrefferUebernehmen;
+  final void Function(ZentralrufReplyData daten) onManuellUebernehmen;
+
+  const _DetailPane({
+    required this.manualMode,
+    required this.selected,
+    required this.onTrefferUebernehmen,
+    required this.onManuellUebernehmen,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (manualMode) {
+      final state = context.watch<ZentralrufReplyBloc>().state;
+      return switch (state) {
+        ZentralrufReplyParsed(result: final result) => VorgangsdatenForm(
+          key: ObjectKey(result),
+          data: result.data,
+          warnings: result.warnings,
+          onUebernehmen: onManuellUebernehmen,
+        ),
+        ZentralrufReplyError(message: final message) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        ),
+        _ => const ManualReplyInput(),
+      };
+    }
+
+    if (selected case final reply?) {
+      final theme = Theme.of(context);
+      return VorgangsdatenForm(
+        key: ValueKey(reply.id),
+        data: reply.data,
+        warnings: reply.warnings,
+        onUebernehmen: (daten) => onTrefferUebernehmen(reply, daten),
+        kopf: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Erfasste Antwort', style: theme.textTheme.titleMedium),
+            if (reply.subject case final subject?) ...[
+              const SizedBox(height: 4),
+              Text(subject, style: theme.textTheme.bodySmall),
+            ],
+          ],
+        ),
+        fuss: _OriginaltextPanel(rawText: reply.rawText),
+      );
+    }
+
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: Text(
+          'Eine Antwort links auswählen oder „Manuell einfügen", um die '
+          'erkannten Daten zu prüfen und zu übernehmen.',
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+}
+
+/// Aufklappbarer Originaltext der Mail: zum Nachlesen und zum Markieren/Kopieren
+/// einzelner Angaben, falls das automatische Mapping etwas nicht erkannt hat.
+class _OriginaltextPanel extends StatelessWidget {
+  final String? rawText;
+
+  const _OriginaltextPanel({required this.rawText});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final text = rawText;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+      child: ExpansionTile(
+        leading: const Icon(Icons.article_outlined),
+        title: const Text('Originaltext der Mail'),
+        subtitle: Text(
+          text == null
+              ? 'Für diese Antwort nicht verfügbar.'
+              : 'Zum Nachlesen und Kopieren aufklappen.',
+          style: theme.textTheme.bodySmall,
+        ),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        children: text == null
+            ? const []
+            : [
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.copy, size: 18),
+                    label: const Text('Alles kopieren'),
+                    onPressed: () async {
+                      await Clipboard.setData(ClipboardData(text: text));
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Originaltext in die Zwischenablage kopiert.',
+                          ),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Container(
+                  width: double.infinity,
+                  constraints: const BoxConstraints(maxHeight: 320),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: theme.colorScheme.outlineVariant),
+                  ),
+                  child: SingleChildScrollView(
+                    child: SelectableText(
+                      text,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontFamily: 'monospace',
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+      ),
     );
   }
 }
@@ -186,6 +346,107 @@ class _StatusBanner extends StatelessWidget {
   }
 }
 
+class _ReplyList extends StatelessWidget {
+  final List<ReceivedReply> replies;
+  final String? selectedId;
+  final bool manualSelected;
+  final bool loading;
+  final MailboxStatus status;
+  final ValueChanged<String> onSelect;
+  final VoidCallback onManual;
+
+  const _ReplyList({
+    required this.replies,
+    required this.selectedId,
+    required this.manualSelected,
+    required this.loading,
+    required this.status,
+    required this.onSelect,
+    required this.onManual,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+          child: manualSelected
+              ? FilledButton.icon(
+                  icon: const Icon(Icons.edit_note),
+                  label: const Text('Manuell einfügen'),
+                  onPressed: onManual,
+                )
+              : FilledButton.tonalIcon(
+                  icon: const Icon(Icons.edit_note),
+                  label: const Text('Manuell einfügen'),
+                  onPressed: onManual,
+                ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: Row(
+            children: [
+              Text(
+                'Erfasste Antworten',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: loading
+              ? const Center(child: CircularProgressIndicator())
+              : replies.isEmpty
+              ? _EmptyHint(status: status)
+              : ListView.separated(
+                  itemCount: replies.length,
+                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final reply = replies[index];
+                    final data = reply.data;
+                    final hatWarnung =
+                        reply.warnings.isNotEmpty ||
+                        data.keinVersichererErmittelt;
+                    return ListTile(
+                      selected: reply.id == selectedId,
+                      selectedTileColor: theme.colorScheme.primary.withValues(
+                        alpha: 0.08,
+                      ),
+                      leading: Icon(
+                        hatWarnung
+                            ? Icons.warning_amber
+                            : Icons.mark_email_unread,
+                        color: hatWarnung ? theme.colorScheme.tertiary : null,
+                      ),
+                      title: Text(
+                        data.referenz ??
+                            data.versichererName ??
+                            '(ohne Referenz)',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(
+                        '${data.versichererName ?? 'Versicherer unbekannt'}'
+                        ' · ${_formatDateTime(reply.receivedAt)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      onTap: () => onSelect(reply.id),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+}
+
 class _EmptyHint extends StatelessWidget {
   final MailboxStatus status;
 
@@ -214,200 +475,6 @@ class _EmptyHint extends StatelessWidget {
                         'aktiv ist, erscheinen eingehende Antworten hier.',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ReplyList extends StatelessWidget {
-  final List<ReceivedReply> replies;
-  final String? selectedId;
-  final ValueChanged<String> onSelect;
-
-  const _ReplyList({
-    required this.replies,
-    required this.selectedId,
-    required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ListView.separated(
-      itemCount: replies.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        final reply = replies[index];
-        final data = reply.data;
-        final hatWarnung =
-            reply.warnings.isNotEmpty || data.keinVersichererErmittelt;
-        return ListTile(
-          selected: reply.id == selectedId,
-          selectedTileColor: theme.colorScheme.primary.withValues(alpha: 0.08),
-          leading: Icon(
-            hatWarnung ? Icons.warning_amber : Icons.mark_email_unread,
-            color: hatWarnung ? theme.colorScheme.tertiary : null,
-          ),
-          title: Text(
-            data.referenz ?? data.versichererName ?? '(ohne Referenz)',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          subtitle: Text(
-            '${data.versichererName ?? 'Versicherer unbekannt'}'
-            ' · ${_formatDateTime(reply.receivedAt)}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          onTap: () => onSelect(reply.id),
-        );
-      },
-    );
-  }
-}
-
-class _ReplyDetail extends StatelessWidget {
-  final ReceivedReply reply;
-  final VoidCallback onUebernehmen;
-  final VoidCallback onErledigt;
-
-  const _ReplyDetail({
-    super.key,
-    required this.reply,
-    required this.onUebernehmen,
-    required this.onErledigt,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final data = reply.data;
-    final keinVersicherer = data.keinVersichererErmittelt;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text('Erfasste Antwort', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 4),
-          if (reply.subject case final subject?)
-            Text(subject, style: theme.textTheme.bodySmall),
-          const SizedBox(height: 12),
-          if (keinVersicherer)
-            _ToneCard(
-              accent: theme.colorScheme.error,
-              icon: Icons.report_gmailerrorred,
-              text:
-                  'Der Zentralruf konnte zu dieser Anfrage keinen Versicherer '
-                  'ermitteln. Kennzeichen und Unfalldatum prüfen und die Anfrage '
-                  'ggf. wiederholen.',
-            ),
-          for (final warnung in reply.warnings)
-            if (!keinVersicherer || !warnung.contains('keinen Versicherer'))
-              _ToneCard(
-                accent: theme.colorScheme.tertiary,
-                icon: Icons.warning_amber,
-                text: warnung,
-              ),
-          const SizedBox(height: 8),
-          for (final (label, value) in _felder(data))
-            _DatenZeile(label: label, value: value),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            icon: const Icon(Icons.download_done),
-            label: const Text('Daten übernehmen und Vorlage ausfüllen'),
-            onPressed: keinVersicherer ? null : onUebernehmen,
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            icon: const Icon(Icons.check),
-            label: const Text('Als erledigt markieren'),
-            onPressed: onErledigt,
-          ),
-        ],
-      ),
-    );
-  }
-
-  static List<(String, String?)> _felder(ZentralrufReplyData data) => [
-    ('Referenz (Ihr Zeichen)', data.referenz),
-    ('Anfrage vom', data.anfrageDatum),
-    ('Gegnerisches Kennzeichen', data.kennzeichen),
-    ('Unfalldatum', data.unfallDatum),
-    ('Versicherer', data.versichererName),
-    ('Straße', data.versichererStrasse),
-    ('PLZ', data.versichererPlz),
-    ('Ort', data.versichererOrt),
-    ('Telefon', data.versichererTelefon),
-    ('Fax', data.versichererFax),
-    ('E-Mail', data.versichererEmail),
-    ('Versicherungsschein-Nr.', data.versicherungsscheinNr),
-    ('Versicherungsbeginn', data.versicherungsbeginn),
-  ];
-}
-
-class _DatenZeile extends StatelessWidget {
-  final String label;
-  final String? value;
-
-  const _DatenZeile({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final fehlt = value == null || value!.isEmpty;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 180,
-            child: Text(label, style: theme.textTheme.bodySmall),
-          ),
-          Expanded(
-            child: Text(
-              fehlt ? 'nicht gefunden' : value!,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontStyle: fehlt ? FontStyle.italic : null,
-                color: fehlt ? theme.colorScheme.error : null,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ToneCard extends StatelessWidget {
-  final Color accent;
-  final IconData icon;
-  final String text;
-
-  const _ToneCard({
-    required this.accent,
-    required this.icon,
-    required this.text,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final tone = SoftTone.fromAccent(accent, Theme.of(context).colorScheme);
-    return Card(
-      color: tone.background,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Icon(icon, color: tone.foreground),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(text, style: TextStyle(color: tone.foreground)),
             ),
           ],
         ),

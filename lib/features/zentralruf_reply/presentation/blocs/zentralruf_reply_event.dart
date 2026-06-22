@@ -15,3 +15,9 @@ class ParseZentralrufReplyEvent extends ZentralrufReplyEvent {
   @override
   List<Object?> get props => [input];
 }
+
+/// Setzt die Auswertung auf den Anfangszustand zurück (leeres Eingabepanel),
+/// z. B. um nach einer Übernahme eine weitere Mail manuell einzufügen.
+class ResetZentralrufReplyEvent extends ZentralrufReplyEvent {
+  const ResetZentralrufReplyEvent();
+}

@@ -7,35 +7,32 @@ import 'app_router.gr.dart';
 @AutoRouterConfig()
 class AppRouter extends RootStackRouter {
   @override
-  List<AutoRoute> get routes =>
-      [
+  List<AutoRoute> get routes => [
+    AutoRoute(
+      path: '/',
+      page: AppShellRoute.page,
+      children: [
+        AutoRoute(path: 'word-automation', page: WordAutomationRoute.page),
+        AutoRoute(path: 'zentralruf', page: ZentralrufRoute.page),
+        AutoRoute(path: 'zentralruf-antworten', page: MailboxInboxRoute.page),
         AutoRoute(
-          path: '/',
-          page: AppShellRoute.page,
+          path: 'vorlagen-verwalten',
+          page: FormTemplateManagementStackRoute.page,
           children: [
-            AutoRoute(path: 'word-automation', page: WordAutomationRoute.page),
-            AutoRoute(path: 'zentralruf', page: ZentralrufRoute.page),
-            AutoRoute(
-                path: 'zentralruf-antwort', page: ZentralrufReplyRoute.page),
-            AutoRoute(path: 'postfach', page: MailboxInboxRoute.page),
-            AutoRoute(
-              path: 'vorlagen-verwalten',
-              page: FormTemplateManagementStackRoute.page,
-              children: [
-                AutoRoute(path: '', page: FormTemplateManagementRoute.page),
-                AutoRoute(path: 'details', page: FormTemplateDetailsRoute.page),
-              ],
-            ),
-            AutoRoute(
-              path: 'mandanten',
-              page: MandantenStackRoute.page,
-              children: [
-                AutoRoute(path: '', page: MandantenOverviewRoute.page),
-                AutoRoute(path: 'details', page: MandantDetailsRoute.page),
-              ],
-            ),
-            AutoRoute(path: 'einstellungen', page: SettingsRoute.page),
+            AutoRoute(path: '', page: FormTemplateManagementRoute.page),
+            AutoRoute(path: 'details', page: FormTemplateDetailsRoute.page),
           ],
         ),
-      ];
+        AutoRoute(
+          path: 'mandanten',
+          page: MandantenStackRoute.page,
+          children: [
+            AutoRoute(path: '', page: MandantenOverviewRoute.page),
+            AutoRoute(path: 'details', page: MandantDetailsRoute.page),
+          ],
+        ),
+        AutoRoute(path: 'einstellungen', page: SettingsRoute.page),
+      ],
+    ),
+  ];
 }
