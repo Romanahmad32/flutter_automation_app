@@ -1,5 +1,7 @@
 # Office Automation App
 
+[![CI](https://github.com/Romanahmad32/flutter_automation_app/actions/workflows/ci.yml/badge.svg)](https://github.com/Romanahmad32/flutter_automation_app/actions/workflows/ci.yml)
+
 A cross-platform **Flutter desktop app** (Windows, Linux, macOS) that automates repetitive office paperwork in a law-firm-style workflow: filling Word templates, managing client records, and monitoring a mailbox for incoming requests — so routine documents are generated in seconds instead of minutes.
 
 Works together with its .NET backend: [AutomationService](https://github.com/Romanahmad32/AutomationService) (REST + SignalR, runs on `localhost:5143`).
