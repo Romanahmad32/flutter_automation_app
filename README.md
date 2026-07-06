@@ -4,6 +4,27 @@ A cross-platform **Flutter desktop app** (Windows, Linux, macOS) that automates 
 
 Works together with its .NET backend: [AutomationService](https://github.com/Romanahmad32/AutomationService) (REST + SignalR, runs on `localhost:5143`).
 
+![Word template wizard: pick a template, fill the detected placeholders, preview the document as PDF](docs/media/word_template_wizard.gif)
+
+## Demo
+
+| | |
+|---|---|
+| **Client management (Mandanten)** — search, create and edit client records with their case files | ![Searching and managing clients](docs/media/client_management.gif) |
+| **Mailbox monitoring** — incoming replies are captured live (IMAP push) and their data is extracted into structured fields | ![Inbox with automatic data extraction from an insurer reply](docs/media/mailbox_extraction.gif) |
+| **Zentralruf autofill** — start a case, and the insurance inquiry form in the browser is prefilled automatically | ![Case form that prefills the Zentralruf web form](docs/media/zentralruf_autofill.gif) |
+| **Theming** — light/dark mode with persisted preferences | ![Switching between light and dark theme](docs/media/theme_switch.gif) |
+
+**Template management** — reusable Word templates with their detected placeholder fields:
+
+![Template management screen listing Word templates and their fields](docs/media/template_management.png)
+
+**Settings** — firm data used to prefill the Zentralruf request form:
+
+![Settings screen with firm data for Zentralruf requests](docs/media/zentralruf_settings.png)
+
+*All names, addresses and case numbers shown are test/dummy data.*
+
 ## Features
 
 - **Word automation wizard** – multi-step flow that detects placeholders in Word templates and fills them from structured form data
